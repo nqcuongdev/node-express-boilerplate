@@ -1,100 +1,67 @@
-const mongoose = require('mongoose');
-const validator = require('validator');
 const bcrypt = require('bcryptjs');
-const { toJSON, paginate } = require('./plugins');
-const { roles } = require('../config/roles');
+const BaseModel = require('./base.model');
+const TokenModel = require('./token.model');
 
-const userSchema = mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-      validate(value) {
-        if (!validator.isEmail(value)) {
-          throw new Error('Invalid email');
-        }
-      },
-    },
-    password: {
-      type: String,
-      required: true,
-      trim: true,
-      minlength: 8,
-      validate(value) {
-        if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
-          throw new Error('Password must contain at least one letter and one number');
-        }
-      },
-      private: true, // used by the toJSON plugin
-    },
-    about: String,
-    avatar: String,
-    contact_link: String,
-    join_date: Date,
-    status: {
-      type: String,
-      enum: ['active', 'inactive', 'blocked'],
-      default: 'active',
-    },
-    role: {
-      type: String,
-      enum: roles,
-      default: 'user',
-    },
-    is_email_verified: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  {
-    timestamps: true,
+class UserModel extends BaseModel {
+  static get tableName() {
+    return 'users';
   }
-);
 
-// add plugin that converts mongoose to json
-userSchema.plugin(toJSON);
-userSchema.plugin(paginate);
-
-/**
- * Check if email is taken
- * @param {string} email - The user's email
- * @param {ObjectId} [excludeUserId] - The id of the user to be excluded
- * @returns {Promise<boolean>}
- */
-userSchema.statics.isEmailTaken = async function (email, excludeUserId) {
-  const user = await this.findOne({ email, _id: { $ne: excludeUserId } });
-  return !!user;
-};
-
-/**
- * Check if password matches the user's password
- * @param {string} password
- * @returns {Promise<boolean>}
- */
-userSchema.methods.isPasswordMatch = async function (password) {
-  const user = this;
-  return bcrypt.compare(password, user.password);
-};
-
-userSchema.pre('save', async function (next) {
-  const user = this;
-  if (user.isModified('password')) {
-    user.password = await bcrypt.hash(user.password, 8);
+  static get idColumn() {
+    return 'id';
   }
-  next();
-});
 
-/**
- * @typedef User
- */
-const User = mongoose.model('User', userSchema);
+  static async isEmailExists(email, excludeUserId = '') {
+    const query = this.query().where('email', email);
 
-module.exports = User;
+    if (excludeUserId) {
+      query.andWhere('id', '!=', excludeUserId);
+    }
+
+    return query.first();
+  }
+
+  async isPasswordMatch(password) {
+    return bcrypt.compare(password, this.password);
+  }
+
+  async $beforeInsert() {
+    this.password = bcrypt.hashSync(this.password, 8);
+    this.join_date = new Date();
+    this.role = 'user';
+    this.is_email_verified = true;
+  }
+
+  async $beforeUpdate(opt, queryContext) {
+    await super.$beforeUpdate(opt, queryContext);
+
+    // Check if the update operation includes a new password
+    if (this.password) {
+      // Hash the new password before storing it in the database
+      this.password = await bcrypt.hash(this.password, 8);
+    }
+  }
+
+  $formatJson(json) {
+    const user = super.$formatJson(json);
+    delete user.password;
+    delete user.is_email_verified;
+
+    return user;
+  }
+
+  static get relationMappings() {
+    return {
+      tokens: {
+        relation: BaseModel.HasManyRelation,
+        modelClass: TokenModel,
+        join: {
+          from: 'users.id',
+          to: 'tokens.user_id',
+        },
+      },
+    };
+  }
+}
+
+module.exports = UserModel;

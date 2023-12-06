@@ -1,44 +1,27 @@
-const mongoose = require('mongoose');
-const { toJSON } = require('./plugins');
-const { tokenTypes } = require('../config/tokens');
+const BaseModel = require('./base.model');
+const UserModel = require('./user.model');
 
-const tokenSchema = mongoose.Schema(
-  {
-    token: {
-      type: String,
-      required: true,
-      index: true,
-    },
-    user: {
-      type: mongoose.SchemaTypes.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    type: {
-      type: String,
-      enum: [tokenTypes.REFRESH, tokenTypes.RESET_PASSWORD, tokenTypes.VERIFY_EMAIL],
-      required: true,
-    },
-    expires: {
-      type: Date,
-      required: true,
-    },
-    blacklisted: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  {
-    timestamps: true,
+class TokenModel extends BaseModel {
+  static get tableName() {
+    return 'tokens';
   }
-);
 
-// add plugin that converts mongoose to json
-tokenSchema.plugin(toJSON);
+  static get idColumn() {
+    return 'id';
+  }
 
-/**
- * @typedef Token
- */
-const Token = mongoose.model('Token', tokenSchema);
+  static get relationMappings() {
+    return {
+      user: {
+        relation: BaseModel.BelongsToOneRelation,
+        modelClass: UserModel,
+        join: {
+          from: 'tokens.user_id',
+          to: 'users.id',
+        },
+      },
+    };
+  }
+}
 
-module.exports = Token;
+module.exports = TokenModel;

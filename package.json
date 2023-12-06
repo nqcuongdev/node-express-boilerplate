@@ -24,7 +24,7 @@
     "docker:test": "docker-compose -f docker-compose.yml -f docker-compose.test.yml up",
     "prepare": "husky install",
     "make:migrate": "cross-env NODE_ENV=development knex --knexfile=src/databases/knexfile.js migrate:make",
-    "run:migrate": "cross-env NODE_ENV=development knex --knexfile=src/databases/knexfile.js migrate:up",
+    "run:migrate": "cross-env NODE_ENV=development knex --knexfile=src/databases/knexfile.js migrate:latest",
     "rollback:migrate": "cross-env NODE_ENV=development knex --knexfile=src/databases/knexfile.js migrate:rollback",
     "make:seed": "cross-env NODE_ENV=development knex --knexfile=src/databases/knexfile.js seed:make",
     "run:seed": "cross-env NODE_ENV=development knex --knexfile=src/databases/knexfile.js seed:run"

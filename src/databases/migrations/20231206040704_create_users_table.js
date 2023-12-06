@@ -13,7 +13,7 @@ exports.up = function (knex) {
     table.string('contact_link', 255).notNullable();
     table.date('join_date').notNullable();
     table.string('role', 50).notNullable();
-    table.string('status', 50).notNullable();
+    table.string('status', 50).notNullable().defaultTo('active');
     table.boolean('is_email_verified').notNullable();
     table.timestamp('created_at').defaultTo(knex.raw('CURRENT_TIMESTAMP'));
     table.timestamp('updated_at').defaultTo(knex.raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));

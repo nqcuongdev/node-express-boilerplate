@@ -1,7 +1,7 @@
+const knex = require('knex')(require('./databases/knexfile'));
 const app = require('./app');
 const config = require('./config/config');
 const logger = require('./config/logger');
-const knex = require('./config/knex');
 
 let server;
 knex.raw('select 1+1 as result').then(() => {
