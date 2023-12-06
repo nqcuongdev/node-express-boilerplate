@@ -1,11 +1,11 @@
-const mongoose = require('mongoose');
 const app = require('./app');
 const config = require('./config/config');
 const logger = require('./config/logger');
+const knex = require('./config/knex');
 
 let server;
-mongoose.connect(config.mongoose.url, config.mongoose.options).then(() => {
-  logger.info('Connected to MongoDB');
+knex.raw('select 1+1 as result').then(() => {
+  logger.info('Connected to Database');
   server = app.listen(config.port, () => {
     logger.info(`Listening to port ${config.port}`);
   });
