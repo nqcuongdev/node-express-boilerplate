@@ -1,17 +1,17 @@
-const mongoose = require('mongoose');
-const config = require('../../src/config/config');
+const knex = require('knex');
+const knexConfig = require('../../src/databases/knexfile');
 
 const setupTestDB = () => {
   beforeAll(async () => {
-    await mongoose.connect(config.mongoose.url, config.mongoose.options);
+    await knex(knexConfig).migrate.latest();
   });
 
   beforeEach(async () => {
-    await Promise.all(Object.values(mongoose.connection.collections).map(async (collection) => collection.deleteMany()));
+    await Promise.all(Object.values(knexConfig).map((knexInstance) => knexInstance.seed.run()));
   });
 
   afterAll(async () => {
-    await mongoose.disconnect();
+    await knex(knexConfig).destroy();
   });
 };
 

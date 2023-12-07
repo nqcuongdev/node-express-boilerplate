@@ -37,6 +37,30 @@ class BaseModel extends Model {
 
     return this.query().delete();
   }
+
+  static async paginate(condition, { page, limit, sortBy }) {
+    let query = this.query();
+    const currentPage = parseInt(page, 10) || 1;
+    const pageSize = parseInt(limit, 10) || 10;
+
+    if (condition) {
+      query = condition(query);
+    }
+
+    if (sortBy) {
+      const [sortField, sortDirection] = sortBy.split(':');
+      query = query.orderBy(sortField, sortDirection);
+    }
+    const result = await query.page(currentPage - 1, pageSize);
+
+    return {
+      results: result.results,
+      page: currentPage,
+      limit: pageSize,
+      totalPages: Math.ceil(result.total / pageSize),
+      totalResults: result.total,
+    };
+  }
 }
 
 module.exports = BaseModel;
