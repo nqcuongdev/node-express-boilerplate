@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const faker = require('faker');
-const User = require('../../src/models/user.model');
+const UserModel = require('../../src/models/user.model');
 
 const password = 'password1';
 const salt = bcrypt.genSaltSync(8);
@@ -12,7 +12,7 @@ const userOne = {
   email: faker.internet.email().toLowerCase(),
   password,
   role: 'user',
-  isEmailVerified: false,
+  is_email_verified: false,
 };
 
 const userTwo = {
@@ -21,7 +21,7 @@ const userTwo = {
   email: faker.internet.email().toLowerCase(),
   password,
   role: 'user',
-  isEmailVerified: false,
+  is_email_verified: false,
 };
 
 const admin = {
@@ -30,11 +30,16 @@ const admin = {
   email: faker.internet.email().toLowerCase(),
   password,
   role: 'admin',
-  isEmailVerified: false,
+  is_email_verified: false,
 };
 
 const insertUsers = async (users) => {
-  await User.insertMany(users.map((user) => ({ ...user, password: hashedPassword })));
+  // eslint-disable-next-line no-return-await
+  users.map(async (user) => await UserModel.create({ ...user, password: hashedPassword }));
+};
+
+const deleteIfExist = async (user) => {
+  await UserModel.query().delete().where('id', user.id);
 };
 
 module.exports = {
@@ -42,4 +47,5 @@ module.exports = {
   userTwo,
   admin,
   insertUsers,
+  deleteIfExist,
 };

@@ -12,6 +12,7 @@ const envVarsSchema = Joi.object()
     DATABASE_HOST: Joi.string().required().description('Database host'),
     DATABASE_PORT: Joi.number().required().description('Database port'),
     DATABASE_USERNAME: Joi.string().required().description('Database user'),
+    DATABASE_TEST_NAME: Joi.string().required().description('Database test name'),
     DATABASE_PASSWORD: Joi.string().required().description('Database password'),
     DATABASE_NAME: Joi.string().required().description('Database name'),
     DATABASE_CHARSET: Joi.string().default('utf8').description('Database charset'),
@@ -49,6 +50,7 @@ module.exports = {
     user: envVars.DATABASE_USERNAME,
     password: envVars.DATABASE_PASSWORD,
     name: envVars.DATABASE_NAME,
+    test_name: envVars.DATABASE_TEST_NAME,
     charset: envVars.DATABASE_CHARSET,
   },
   jwt: {

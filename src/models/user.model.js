@@ -1,3 +1,4 @@
+const Joi = require('joi');
 const bcrypt = require('bcryptjs');
 const BaseModel = require('./base.model');
 const TokenModel = require('./token.model');
@@ -61,6 +62,23 @@ class UserModel extends BaseModel {
         },
       },
     };
+  }
+
+  static validate(user) {
+    const schema = Joi.object({
+      name: Joi.string().required(),
+      email: Joi.string().email().required(),
+      password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{3,30}$')).required(),
+      about: Joi.string(),
+      avatar: Joi.string(),
+      contact_link: Joi.string(),
+      join_date: Joi.date().required(),
+      role: Joi.string().valid('user', 'admin').required(),
+      status: Joi.string().valid('active', 'inactive', 'banned').required(),
+      is_email_verified: Joi.boolean(),
+    });
+
+    return schema.validateAsync(user);
   }
 }
 

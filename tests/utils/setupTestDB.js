@@ -3,11 +3,16 @@ const knexConfig = require('../../src/databases/knexfile');
 
 const setupTestDB = () => {
   beforeAll(async () => {
-    await knex(knexConfig).migrate.latest();
+    await knex(knexConfig);
   });
 
-  beforeEach(async () => {
-    await Promise.all(Object.values(knexConfig).map((knexInstance) => knexInstance.seed.run()));
+  afterEach(async () => {
+    const tables = ['users', 'tokens'];
+    // eslint-disable-next-line no-restricted-syntax
+    for (const table of tables) {
+      // eslint-disable-next-line no-await-in-loop
+      await knex(knexConfig).table(table).del();
+    }
   });
 
   afterAll(async () => {
