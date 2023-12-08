@@ -1,4 +1,4 @@
-const knex = require('knex');
+const { DBError } = require('objection');
 const httpStatus = require('http-status');
 const httpMocks = require('node-mocks-http');
 const { errorConverter, errorHandler } = require('../../../src/middlewares/error');
@@ -68,19 +68,17 @@ describe('Error middlewares', () => {
     });
 
     test('should convert a Knex error to ApiError with status 400 and preserve its message', () => {
-      const error = new knex.QueryBuilderError('Any Knex error');
+      const error = new DBError({ nativeError: new Error('Any error') });
       const next = jest.fn();
 
       errorConverter(error, httpMocks.createRequest(), httpMocks.createResponse(), next);
 
+      const apiError = next.mock.calls[0][0];
+
       expect(next).toHaveBeenCalledWith(expect.any(ApiError));
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusCode: httpStatus.BAD_REQUEST,
-          message: error.message,
-          isOperational: false,
-        })
-      );
+      expect(apiError.statusCode).toEqual(httpStatus.BAD_REQUEST);
+      expect(apiError.message).toEqual(error.message);
+      expect(apiError.isOperational).toEqual(false);
     });
 
     test('should convert any other object to ApiError with status 500 and its message', () => {

@@ -7,23 +7,23 @@ Model.knex(knex);
 
 class BaseModel extends Model {
   static createNotFoundError() {
-    return new ApiError(httpStatus.NOT_FOUND, 'Item not found');
+    return new ApiError(httpStatus.NOT_FOUND, 'Record not found');
   }
 
   static create(data) {
     return this.query().insert(data);
   }
 
-  static updateAndFetch(data, id) {
+  static updateAndFetch(id, data) {
     return this.query().patchAndFetchById(id, data).throwIfNotFound();
   }
 
   static findOne(condition) {
-    return this.query().findOne(condition).throwIfNotFound();
+    return this.query().findOne(condition).first();
   }
 
   static findById(condition) {
-    return this.query().findById(condition).throwIfNotFound({ message: 'Not found' });
+    return this.query().findById(condition).first();
   }
 
   static findAll() {

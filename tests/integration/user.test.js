@@ -402,7 +402,7 @@ describe('User routes', () => {
         .expect(httpStatus.OK);
     });
 
-    test('should return 400 error if userId is not a valid mongo id', async () => {
+    test('should return 400 error if userId is not a valid user id', async () => {
       await insertUsers([admin]);
 
       await request(app)
@@ -554,7 +554,7 @@ describe('User routes', () => {
         .expect(httpStatus.NOT_FOUND);
     });
 
-    test('should return 400 error if userId is not a valid mongo id', async () => {
+    test('should return 400 error if userId is not a valid user id', async () => {
       await insertUsers([admin]);
       const updateBody = { name: faker.name.findName() };
 

@@ -1,22 +1,28 @@
 const knex = require('knex');
+const { Model, transaction } = require('objection');
 const knexConfig = require('../../src/databases/knexfile');
 
+let transactionInstance;
+let knexInstance;
 const setupTestDB = () => {
   beforeAll(async () => {
-    await knex(knexConfig);
+    knexInstance = await knex(knexConfig);
+  });
+
+  beforeEach(async () => {
+    transactionInstance = await transaction.start(knexInstance);
+    Model.knex(transactionInstance);
   });
 
   afterEach(async () => {
-    const tables = ['users', 'tokens'];
-    // eslint-disable-next-line no-restricted-syntax
-    for (const table of tables) {
-      // eslint-disable-next-line no-await-in-loop
-      await knex(knexConfig).table(table).del();
+    if (transactionInstance) {
+      await transactionInstance.rollback();
+      Model.knex(knex);
     }
   });
 
   afterAll(async () => {
-    await knex(knexConfig).destroy();
+    await knexInstance.destroy();
   });
 };
 

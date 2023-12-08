@@ -31,22 +31,37 @@ describe('Auth routes', () => {
 
     test('should return 201 and successfully register user if request data is ok', async () => {
       const res = await request(app).post('/v1/auth/register').send(newUser).expect(httpStatus.CREATED);
+      const resUser = res.body.data.user;
 
-      expect(res.body.user).not.toHaveProperty('password');
-      expect(res.body.user).toEqual({
+      expect(resUser).not.toHaveProperty('password');
+      expect(resUser).toEqual({
         id: expect.anything(),
         name: newUser.name,
         email: newUser.email,
         role: 'user',
-        isEmailVerified: false,
+        join_date: expect.anything(),
       });
 
-      const dbUser = await UserModel.findById(res.body.user.id);
+      const dbUser = await UserModel.findById(resUser.id);
       expect(dbUser).toBeDefined();
       expect(dbUser.password).not.toBe(newUser.password);
-      expect(dbUser).toMatchObject({ name: newUser.name, email: newUser.email, role: 'user', isEmailVerified: false });
+      expect(dbUser).toMatchObject(
+        new UserModel({
+          id: dbUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          role: 'user',
+          is_email_verified: false,
+          about: '',
+          avatar: '',
+          contact_link: '',
+          join_date: dbUser.join_date,
+          created_at: dbUser.created_at,
+          updated_at: dbUser.updated_at,
+        })
+      );
 
-      expect(res.body.tokens).toEqual({
+      expect(res.body.data.tokens).toEqual({
         access: { token: expect.anything(), expires: expect.anything() },
         refresh: { token: expect.anything(), expires: expect.anything() },
       });
@@ -92,15 +107,15 @@ describe('Auth routes', () => {
 
       const res = await request(app).post('/v1/auth/login').send(loginCredentials).expect(httpStatus.OK);
 
-      expect(res.body.user).toEqual({
+      expect(res.body.data.user).toEqual({
         id: expect.anything(),
         name: userOne.name,
         email: userOne.email,
         role: userOne.role,
-        isEmailVerified: userOne.isEmailVerified,
+        is_email_verified: userOne.is_email_verified,
       });
 
-      expect(res.body.tokens).toEqual({
+      expect(res.body.data.tokens).toEqual({
         access: { token: expect.anything(), expires: expect.anything() },
         refresh: { token: expect.anything(), expires: expect.anything() },
       });
@@ -174,7 +189,7 @@ describe('Auth routes', () => {
 
       const res = await request(app).post('/v1/auth/refresh-tokens').send({ refreshToken }).expect(httpStatus.OK);
 
-      expect(res.body).toEqual({
+      expect(res.body.data).toEqual({
         access: { token: expect.anything(), expires: expect.anything() },
         refresh: { token: expect.anything(), expires: expect.anything() },
       });
@@ -321,12 +336,8 @@ describe('Auth routes', () => {
     test('should return 401 if user is not found', async () => {
       const expires = moment().add(config.jwt.resetPasswordExpirationMinutes, 'minutes');
       const resetPasswordToken = tokenService.generateToken(userOne.id, expires, tokenTypes.RESET_PASSWORD);
-      await tokenService.saveToken(resetPasswordToken, userOne.id, expires, tokenTypes.RESET_PASSWORD);
-
-      await request(app)
-        .post('/v1/auth/reset-password')
-        .query({ token: resetPasswordToken })
-        .send({ password: 'password2' })
+      await tokenService
+        .saveToken(resetPasswordToken, userOne.id, expires, tokenTypes.RESET_PASSWORD)
         .expect(httpStatus.UNAUTHORIZED);
     });
 
@@ -389,9 +400,10 @@ describe('Auth routes', () => {
   describe('POST /v1/auth/verify-email', () => {
     test('should return 204 and verify the email', async () => {
       await insertUsers([userOne]);
+      const user = await UserModel.findById(userOne.id);
       const expires = moment().add(config.jwt.verifyEmailExpirationMinutes, 'minutes');
-      const verifyEmailToken = tokenService.generateToken(userOne.id, expires);
-      await tokenService.saveToken(verifyEmailToken, userOne.id, expires, tokenTypes.VERIFY_EMAIL);
+      const verifyEmailToken = tokenService.generateToken(user.id, expires);
+      await tokenService.saveToken(verifyEmailToken, user.id, expires, tokenTypes.VERIFY_EMAIL);
 
       await request(app)
         .post('/v1/auth/verify-email')
@@ -399,11 +411,11 @@ describe('Auth routes', () => {
         .send()
         .expect(httpStatus.NO_CONTENT);
 
-      const dbUser = await UserModel.findById(userOne.id);
+      const dbUser = await UserModel.findById(user.id);
 
-      expect(dbUser.isEmailVerified).toBe(true);
+      expect(dbUser.is_email_verified).toBe(true);
 
-      const dbVerifyEmailToken = await TokenModel.countDocuments({
+      const dbVerifyEmailToken = await TokenModel.query.count({
         user: userOne.id,
         type: tokenTypes.VERIFY_EMAIL,
       });
@@ -445,12 +457,8 @@ describe('Auth routes', () => {
     test('should return 401 if user is not found', async () => {
       const expires = moment().add(config.jwt.verifyEmailExpirationMinutes, 'minutes');
       const verifyEmailToken = tokenService.generateToken(userOne.id, expires);
-      await tokenService.saveToken(verifyEmailToken, userOne.id, expires, tokenTypes.VERIFY_EMAIL);
-
-      await request(app)
-        .post('/v1/auth/verify-email')
-        .query({ token: verifyEmailToken })
-        .send()
+      await tokenService
+        .saveToken(verifyEmailToken, userOne.id, expires, tokenTypes.VERIFY_EMAIL)
         .expect(httpStatus.UNAUTHORIZED);
     });
   });

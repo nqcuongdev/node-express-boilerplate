@@ -28,8 +28,7 @@ class UserModel extends BaseModel {
 
   async $beforeInsert() {
     this.password = bcrypt.hashSync(this.password, 8);
-    this.join_date = new Date();
-    this.role = 'user';
+    this.join_date = new Date().getDate();
     this.is_email_verified = true;
   }
 

@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const faker = require('faker');
-const UserModel = require('../../src/models/user.model');
+const { UserModel } = require('../../src/models');
 
 const password = 'password1';
 const salt = bcrypt.genSaltSync(8);
@@ -34,8 +34,9 @@ const admin = {
 };
 
 const insertUsers = async (users) => {
-  // eslint-disable-next-line no-return-await
-  users.map(async (user) => await UserModel.create({ ...user, password: hashedPassword }));
+  users.forEach(async (user) => {
+    await UserModel.create({ ...user, password: hashedPassword });
+  });
 };
 
 const deleteIfExist = async (user) => {

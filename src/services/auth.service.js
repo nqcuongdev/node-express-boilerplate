@@ -26,11 +26,12 @@ const loginUserWithEmailAndPassword = async (email, password) => {
  * @returns {Promise}
  */
 const logout = async (refreshToken) => {
-  const refreshTokenDoc = await TokenModel.findOne({ token: refreshToken, type: tokenTypes.REFRESH, blacklisted: false });
-  if (!refreshTokenDoc) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Not found');
-  }
-  await refreshTokenDoc.remove();
+  const refreshTokenDoc = await TokenModel.findOne({
+    token: refreshToken,
+    type: tokenTypes.REFRESH,
+    blacklisted: false,
+  }).throwIfNotFound();
+  await TokenModel.delete(refreshTokenDoc.id);
 };
 
 /**
@@ -41,7 +42,7 @@ const logout = async (refreshToken) => {
 const refreshAuth = async (refreshToken) => {
   try {
     const refreshTokenDoc = await tokenService.verifyToken(refreshToken, tokenTypes.REFRESH);
-    const user = await userService.getUserById(refreshTokenDoc.user);
+    const user = await userService.getUserById(refreshTokenDoc.user_id);
     if (!user) {
       throw new Error();
     }
@@ -62,12 +63,12 @@ const refreshAuth = async (refreshToken) => {
 const resetPassword = async (resetPasswordToken, newPassword) => {
   try {
     const resetPasswordTokenDoc = await tokenService.verifyToken(resetPasswordToken, tokenTypes.RESET_PASSWORD);
-    const user = await userService.getUserById(resetPasswordTokenDoc.user);
+    const user = await userService.getUserById(resetPasswordTokenDoc.user_id);
     if (!user) {
       throw new Error();
     }
     await userService.updateUserById(user.id, { password: newPassword });
-    await TokenModel.query().delete().where('user', user.id).andWhere('type', tokenTypes.RESET_PASSWORD);
+    await TokenModel.query().delete().where('user_id', user.id).andWhere('type', tokenTypes.RESET_PASSWORD);
   } catch (error) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Password reset failed');
   }
@@ -81,11 +82,11 @@ const resetPassword = async (resetPasswordToken, newPassword) => {
 const verifyEmail = async (verifyEmailToken) => {
   try {
     const verifyEmailTokenDoc = await tokenService.verifyToken(verifyEmailToken, tokenTypes.VERIFY_EMAIL);
-    const user = await userService.getUserById(verifyEmailTokenDoc.user);
+    const user = await userService.getUserById(verifyEmailTokenDoc.user_id);
     if (!user) {
       throw new Error();
     }
-    await TokenModel.query().delete().where('user', user.id).andWhere('type', tokenTypes.VERIFY_EMAIL);
+    await TokenModel.query().delete().where('user_id', user.id).andWhere('type', tokenTypes.VERIFY_EMAIL);
     await userService.updateUserById(user.id, { is_email_verified: true });
   } catch (error) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Email verification failed');

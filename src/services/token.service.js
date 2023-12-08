@@ -9,7 +9,7 @@ const { tokenTypes } = require('../config/tokens');
 
 /**
  * Generate token
- * @param {ObjectId} userId
+ * @param {Number} userId
  * @param {Moment} expires
  * @param {string} type
  * @param {string} [secret]
@@ -29,7 +29,7 @@ const generateToken = (userId, expires, type, secret = config.jwt.secret) => {
 /**
  * Save a token
  * @param {string} token
- * @param {ObjectId} userId
+ * @param {Number} userId
  * @param {Moment} expires
  * @param {string} type
  * @param {boolean} [blacklisted]
@@ -55,7 +55,10 @@ const saveToken = async (token, userId, expires, type, blacklisted = false) => {
  */
 const verifyToken = async (token, type) => {
   const payload = jwt.verify(token, config.jwt.secret);
-  const tokenDoc = await TokenModel.query().where({ token, type, user: payload.sub, blacklisted: false }).throwIfNotFound();
+  const tokenDoc = await TokenModel.query()
+    .where({ token, type, user_id: payload.sub, blacklisted: false })
+    .first()
+    .throwIfNotFound();
 
   return tokenDoc;
 };
